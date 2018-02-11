@@ -2,8 +2,11 @@ CREATE DATABASE JDdb;
 
 USE JDdb;
 
+Drop table CURRENT;
+Drop table HISTORY;
+
 CREATE TABLE CURRENT(
-CurrentId int(10) NOT NULL auto_increment,
+CurrentId int(20) NOT NULL auto_increment,
 CurItemId int(20) NOT NULL UNIQUE,
 ItemName varchar(20) NOT NULL,
 URL varchar(128) NOT NULL UNIQUE,

@@ -1,9 +1,9 @@
 __author__ = 'limitwh'
 #coding=utf-8
 import pymysql
-db=pymysql.connect(host="localhost",user="pytest",password="password",db="shopdb",port=3306,charset='utf8')
-InsterSql="""INSERT INTO goodstable (Gname,Gprice,Gnum) VALUES('卤鸡蛋',2.0,45)"""
-cur = db.cursor()  
+db=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
+InsterSql="""INSERT INTO CURRENT (CurItemId,ItemName,URL,CurPrice) VALUES('卤鸡蛋',2.0,45)"""
+cur = db.cursor() 
 print(InsterSql)
 try:  
     sts=cur.execute(InsterSql) 
