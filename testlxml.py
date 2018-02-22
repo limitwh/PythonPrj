@@ -1,6 +1,6 @@
 __author__ = 'limitwh'
 # coding=gbk
-import requests
+#import requests
 from bs4 import BeautifulSoup
 htmlstr='''
 <!DOCTYPE HTML>
@@ -2243,7 +2243,8 @@ dataLayer = [{
 '''
 
 soup = BeautifulSoup(htmlstr,"lxml")
-print(soup.find_all('',{"class":"item ellipsis"}))
+divtitle = soup.find_all(name='div',attrs={"class":"item ellipsis"})
+print(divtitle[0].text)
 #tree = etree.parse(UrlStr)
 #r = tree.XPath("/html/body/div[11]/div[2]/div[1]/div[2]/div[1]/div[1]/ul[3]/li[1]")
 #print(len(r))
