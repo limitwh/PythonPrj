@@ -2,8 +2,8 @@ CREATE DATABASE JDdb;
 
 USE JDdb;
 
-Drop table CURRENT;
-Drop table HISTORY;
+Drop TABLE CURRENT;
+Drop TABLE HISTORY;
 
 CREATE TABLE CURRENT(
 CurrentId int(20) NOT NULL auto_increment,

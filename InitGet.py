@@ -2,6 +2,7 @@ __author__ = 'limitwh'
 #coding=utf-8
 from bs4 import BeautifulSoup
 import requests
+import pymysql
 import json
 import time
 import re
@@ -28,10 +29,20 @@ def GetName(url):
 	divtitle = soup.find_all(name='div',attrs={"class":"item ellipsis"})
 	return divtitle[0].text
 
-ItemDict = GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=3")
-for key in ItemDict:
-	print(GetName(ItemDict[key]))
-	time.sleep(0.5)
-	print(GetPrice(key))
-	time.sleep(0.5)
+def InsertDB(list):
+	DB=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
+	curs = DB.cursor()
+	push=0
 	
+
+
+ItemUrl = GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=3")
+ItemList=[]
+for ItemID in ItemUrl:
+	ItemName=(GetName(ItemUrl[ItemID]))
+	time.sleep(0.3)
+	ItemPrice=(GetPrice(ItemID))
+	time.sleep(0.3)
+	ItemList.append([ItemID,ItemUrl[ItemID],ItemName,ItemPrice])
+
+print(ItemList)
