@@ -7,7 +7,9 @@ import json
 import time
 import re
 def GetItemFromUrl(url):
-	Urlres=requests.get(url)
+	htmlstr=requests.get(url).txt
+	soup = BeautifulSoup(htmlstr,"lxml")
+	Urlres = soup.find_all(name='ul',attrs={"class":"gl-warp clearfix"})[0].text
 	Regres=re.compile(r"item.jd.com.*?html")
 	PriceID=re.compile(r"\d+")
 	TempUrlLists=Regres.findall(str(Urlres.content,'utf-8'))
@@ -23,6 +25,13 @@ def GetPrice(itemid,ipoor):
 	Price=requests.get(PriceUrl).json()
 	return Price[0]['op']
 
+def GetMobPrice(itemid):
+	MobPriceUrl="https://item.m.jd.com/product/"+itemid+".html"
+	htmlstr=requests.get(MobPriceUrl).text
+	soup = BeautifulSoup(htmlstr,"lxml")
+	pricetag = soup.find_all(name='input',attrs={"name":"jdPrice"})[0].attrs	
+	return pricetag['value']
+
 def GetName(url):
 	htmlstr=requests.get(url).text
 	soup=BeautifulSoup(htmlstr,"lxml")
@@ -31,7 +40,7 @@ def GetName(url):
 
 def InsertDB(ItemList):
 	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
-	GetIP="INSERT INTO CURRENT (CurItemId,URL,ItemName,CurPrice) VALUES (%s,%s,%s,%s)"
+	InsterSql="INSERT INTO CURRENT (CurItemId,URL,ItemName,CurPrice) VALUES (%s,%s,%s,%s)"
 	cur = conn.cursor() 
 	count=0
 	try:  
@@ -63,14 +72,13 @@ def GetIPoor():
 	return results
 
 
-ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=3")
+ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=1")
 ItemList=[]
-#or ItemID in ItemUrl:
-#	ItemName=(GetName(ItemUrl[ItemID]))
-#	time.sleep(0.3)
-#	ItemPrice=(GetPrice(ItemID))
-#	time.sleep(0.3)
-#	ItemList.append([ItemID,ItemUrl[ItemID],ItemName,ItemPrice])
+for ItemID in ItemUrl:
+	ItemName=(GetName(ItemUrl[ItemID]))
+	time.sleep(0.3)
+	ItemPrice=(GetMobPrice(ItemID))
+	time.sleep(0.3)
+	ItemList.append([ItemID,ItemUrl[ItemID],ItemName,ItemPrice])
 
-IPoor=GetIPoor()
-print(IPoor)
+InsertDB(ItemList)

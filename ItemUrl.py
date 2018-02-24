@@ -3,13 +3,12 @@ __author__ = 'limitwh'
 import requests
 from bs4 import BeautifulSoup
 Url="https://item.jd.com/4230887.html"
-UrlDict={'3888216': 'https://item.jd.com/3888216.html', '4230887':'https://item.jd.com/4230887.html', '5835263': 'https://item.jd.com/5835263.html'}
+UrlDict={'5936828': 'https://item.m.jd.com/product/5936828.html'}
 for key in UrlDict:
 	htmlstr=requests.get(UrlDict[key]).text
 	soup = BeautifulSoup(htmlstr,"lxml")
-	divtitle = soup.find_all(name='div',attrs={"class":"item ellipsis"})
-	print(divtitle[0].text)
-
+	pricetag = soup.find_all(name='input',attrs={"name":"jdPrice"})[0].attrs
+	print(pricetag)
 #for key in UrlDict:
 #	time.sleep(1.5)
 #	print(key+':'+UrlDict[key])
