@@ -7,12 +7,12 @@ import json
 import time
 import re
 def GetItemFromUrl(url):
-	htmlstr=requests.get(url).txt
-	soup = BeautifulSoup(htmlstr,"lxml")
-	Urlres = soup.find_all(name='ul',attrs={"class":"gl-warp clearfix"})[0].text
 	Regres=re.compile(r"item.jd.com.*?html")
 	PriceID=re.compile(r"\d+")
-	TempUrlLists=Regres.findall(str(Urlres.content,'utf-8'))
+	htmlstr=requests.get(url).text
+	soup = BeautifulSoup(htmlstr,"lxml")
+	tagstr = str(soup.find_all(name='ul',attrs={"class":"gl-warp clearfix"})[0])
+	TempUrlLists=Regres.findall(tagstr)
 	PriceIDList=PriceID.findall(''.join(TempUrlLists))
 	TempList=[]
 	for x in TempUrlLists:
@@ -29,8 +29,20 @@ def GetMobPrice(itemid):
 	MobPriceUrl="https://item.m.jd.com/product/"+itemid+".html"
 	htmlstr=requests.get(MobPriceUrl).text
 	soup = BeautifulSoup(htmlstr,"lxml")
-	pricetag = soup.find_all(name='input',attrs={"name":"jdPrice"})[0].attrs	
-	return pricetag['value']
+	price=0
+	time.sleep(0.45)
+	try:
+		pricetag = soup.find_all(name='input',attrs={"name":"jdPrice"})[0].attrs
+		price=pricetag['value']
+	except IndexError:
+		try:
+			bigprice=soup.find_all(name='span',attrs={"class":"big-price"})[0].text
+			smallsprice=soup.find_all(name='span',attrs={"class":"small-price"})[0].text
+			price=bigprice+smallsprice
+		except Exception as e:
+			raise e
+	finally:
+		return price
 
 def GetName(url):
 	htmlstr=requests.get(url).text
@@ -72,13 +84,12 @@ def GetIPoor():
 	return results
 
 
-ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=1")
+ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=4")
 ItemList=[]
 for ItemID in ItemUrl:
+	time.sleep(0.15)
 	ItemName=(GetName(ItemUrl[ItemID]))
-	time.sleep(0.3)
 	ItemPrice=(GetMobPrice(ItemID))
-	time.sleep(0.3)
 	ItemList.append([ItemID,ItemUrl[ItemID],ItemName,ItemPrice])
 
 InsertDB(ItemList)
