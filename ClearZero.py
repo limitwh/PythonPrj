@@ -33,18 +33,20 @@ Sreachsql="SELECT CURITEMID FROM CURRENT WHERE CURPRICE=0"
 cur = conn.cursor()
 cur.execute(Sreachsql)
 results = cur.fetchall()
-print("Totle %d records price is zero"%len(results))
-try:
-	for itemid in results:
-		price=GetMobPrice(itemid[0])
-#		print("UPDATE CURRENT SET CURPRICE="+str(price)+" WHERE CURITEMID="+itemid[0])
-		cur.execute("UPDATE CURRENT SET CURPRICE="+str(price)+" WHERE CURITEMID="+itemid[0])
-		count=count+1
-	conn.commit()
-except Exception as e:  
-	conn.rollback()
-	raise e     
-finally:  
-	cur.close()
-	conn.close()
-print("Update %d records into table"%count)
+if len(results) == 0:
+	print("No records price is zero")
+else:
+	print("Totle %d records price is zero"%len(results))
+	try:
+		for itemid in results:
+			price=GetMobPrice(itemid[0])
+			cur.execute("UPDATE CURRENT SET CURPRICE="+str(price)+" WHERE CURITEMID="+itemid[0])
+			count=count+1
+		conn.commit()
+	except Exception as e:  
+		conn.rollback()
+		raise e     
+	finally:  
+		cur.close()
+		conn.close()
+	print("Update %d records into table"%count)

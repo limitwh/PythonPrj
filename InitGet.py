@@ -83,6 +83,33 @@ def GetIPoor():
 		conn.close()
 	return results
 
+def ClearZero()
+	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
+	price=0
+	itemid=0
+	count=0
+	Sreachsql="SELECT CURITEMID FROM CURRENT WHERE CURPRICE=0"
+	cur = conn.cursor()
+	cur.execute(Sreachsql)
+	results = cur.fetchall()
+	if len(results) == 0:
+		print("No records price is zero")
+	else:
+		print("Totle %d records price is zero"%len(results))
+		try:
+			for itemid in results:
+				price=GetMobPrice(itemid[0])
+				cur.execute("UPDATE CURRENT SET CURPRICE="+str(price)+" WHERE CURITEMID="+itemid[0])
+				count=count+1
+			conn.commit()
+		except Exception as e:  
+			conn.rollback()
+			raise e     
+		finally:  
+			cur.close()
+			conn.close()
+	print("Update %d records into table"%count)
+	return count
 
 ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=4")
 ItemList=[]
