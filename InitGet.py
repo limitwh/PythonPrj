@@ -83,7 +83,7 @@ def GetIPoor():
 		conn.close()
 	return results
 
-def ClearZero()
+def ClearZero():
 	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
 	price=0
 	itemid=0
@@ -111,6 +111,37 @@ def ClearZero()
 	print("Update %d records into table"%count)
 	return count
 
+def UpdateHis():
+	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
+	Sreachsql="SELECT CurItemId,CurPrice,UpdTimeVersion FROM CURRENT"
+	InsterSql="INSERT INTO HISTORY (HisItemId,HisPrice,GetTimeVersion) VALUES (%s,%s,%s)"
+	cur = conn.cursor() 
+	try:  
+		cur.execute(Sreachsql)
+		results = cur.fetchall()
+	except Exception as e:  
+		conn.rollback()
+		raise e     
+	finally:  
+		cur.close()
+
+	count=0
+	cur = conn.cursor() 
+	try:  
+		for Item in results:
+			cur.execute(InsterSql,(Item))
+			count=count+1
+		conn.commit()
+	except Exception as e:  
+		conn.rollback()
+		raise e     
+	finally:  
+		cur.close()
+		conn.close()
+	print("Inster %d records into History table"%count)
+
+
+
 ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=4")
 ItemList=[]
 for ItemID in ItemUrl:
@@ -118,5 +149,7 @@ for ItemID in ItemUrl:
 	ItemName=(GetName(ItemUrl[ItemID]))
 	ItemPrice=(GetMobPrice(ItemID))
 	ItemList.append([ItemID,ItemUrl[ItemID],ItemName,ItemPrice])
+print(ItemList)
 
-InsertDB(ItemList)
+
+#InsertDB(ItemList)
