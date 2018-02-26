@@ -6,11 +6,14 @@ import pymysql
 import json
 import time
 import re
-def GetItemFromUrl(url):
+
+#从URL中取得商品ID
+def InitGetItemFromUrl(url):
 	Regres=re.compile(r"item.jd.com.*?html")
 	PriceID=re.compile(r"\d+")
 	htmlstr=requests.get(url).text
 	soup = BeautifulSoup(htmlstr,"lxml")
+	#用正则表达式取得商品陈列标签内的商品ID
 	tagstr = str(soup.find_all(name='ul',attrs={"class":"gl-warp clearfix"})[0])
 	TempUrlLists=Regres.findall(tagstr)
 	PriceIDList=PriceID.findall(''.join(TempUrlLists))
@@ -18,19 +21,24 @@ def GetItemFromUrl(url):
 	for x in TempUrlLists:
 		TempList.append("https://"+x)
 	TempDic=dict(zip(PriceIDList,TempList))
+	#返回一个字典，格式----{商品ID：该商品的URL}
 	return TempDic
 
+#从webservice取得价格
 def GetPrice(itemid,ipoor):
 	PriceUrl="https://p.3.cn/prices/mgets?skuIds=J_"+itemid
+	#webservice返回的是一个json对象
 	Price=requests.get(PriceUrl).json()
 	return Price[0]['op']
 
+#从移动端网页取得价格
 def GetMobPrice(itemid):
 	MobPriceUrl="https://item.m.jd.com/product/"+itemid+".html"
 	htmlstr=requests.get(MobPriceUrl).text
 	soup = BeautifulSoup(htmlstr,"lxml")
 	price=0
 	time.sleep(0.45)
+	#移动端存在两种价格标签
 	try:
 		pricetag = soup.find_all(name='input',attrs={"name":"jdPrice"})[0].attrs
 		price=pricetag['value']
@@ -44,13 +52,16 @@ def GetMobPrice(itemid):
 	finally:
 		return price
 
+#从URL中取得商品名称
 def GetName(url):
 	htmlstr=requests.get(url).text
 	soup=BeautifulSoup(htmlstr,"lxml")
+	#商品名称标签
 	divtitle=soup.find_all(name='div',attrs={"class":"item ellipsis"})
 	return divtitle[0].text
 
-def InsertDB(ItemList):
+#初始化插入Item到Mysql表中
+def InitInsertDB(ItemList):
 	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
 	InsterSql="INSERT INTO CURRENT (CurItemId,URL,ItemName,CurPrice) VALUES (%s,%s,%s,%s)"
 	cur = conn.cursor() 
@@ -68,6 +79,7 @@ def InsertDB(ItemList):
 		conn.close()
 	print("Inster %d records into table"%count)
 
+#取得代理IP，未使用
 def GetIPoor():
 	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
 	GetIP="SELECT HTTP,IPURL FROM IPOOR"
@@ -83,7 +95,8 @@ def GetIPoor():
 		conn.close()
 	return results
 
-def ClearZero():
+#移动端网页爬取价格时，仍然有0价格的情况，下记函数在初始化插入后对0价格做更新处理
+def InitClearZero():
 	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
 	price=0
 	itemid=0
@@ -111,6 +124,7 @@ def ClearZero():
 	print("Update %d records into table"%count)
 	return count
 
+#Cur表更新好之后，下记函数将Cur表中的信息同步到His表中
 def UpdateHis():
 	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
 	Sreachsql="SELECT CurItemId,CurPrice,UpdTimeVersion FROM CURRENT"
@@ -124,7 +138,6 @@ def UpdateHis():
 		raise e     
 	finally:  
 		cur.close()
-
 	count=0
 	cur = conn.cursor() 
 	try:  
@@ -140,7 +153,58 @@ def UpdateHis():
 		conn.close()
 	print("Inster %d records into History table"%count)
 
+#移动端网页爬取价格时，仍然有0价格的情况，下记函数在日常更新后对0价格做更新处理
+def ClearZeroList(item0list):
+	count=0
+	for Item in item0list:
+		if(Item[1]==0):
+			count=count+1
+			Tempprice=GetMobPrice(Item[0])
+			Item[1]=Tempprice
+	return count,item0list
 
+#移动端网页爬取价格时，仍然有0价格的情况，下记函数在日常更新后对0价格做更新处理
+def ClearZeroPrice(item0list):
+	lists=ClearZeroList(item0list)
+	while (lists[0] !=0):
+		print("Totle %d records price is zero"%lists[0])
+		lists=ClearZeroList(lists[1])
+	return lists[1]
+
+#日常更新Cur表。仍有null price的问题尚未解决，数据中时间戳属性需要改为非自动更新
+def UpdateCur():
+	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
+	Sreachsql="SELECT CurItemId FROM CURRENT"
+	cur = conn.cursor()
+	Item0List=[]
+	count=0
+	try:  
+		cur.execute(Sreachsql)
+		results = cur.fetchall()
+	except Exception as e:  
+		conn.rollback()
+		raise e     
+	finally:  
+		cur.close()
+	for ItemID in results:
+		price=GetMobPrice(ItemID[0])
+		Item0List.append([ItemID[0],price])
+	Item0List=ClearZeroPrice(Item0List)
+	cur = conn.cursor()
+	try:
+		for Item in Item0List:
+			price=GetMobPrice(Item[0])
+			if(price!=""):
+				cur.execute("UPDATE CURRENT SET CURPRICE="+str(Item[1])+" WHERE CURITEMID="+str(Item[0]))
+				count=count+1
+		conn.commit()
+	except Exception as e:  
+		conn.rollback()
+		raise e     
+	finally:  
+		cur.close()
+		conn.close()
+	return count
 
 ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=4")
 ItemList=[]
