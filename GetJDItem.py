@@ -63,7 +63,7 @@ def GetName(url):
 #初始化插入Item到Mysql表中
 def InitInsertDB(ItemList):
 	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
-	InsterSql="INSERT INTO CURRENT (CurItemId,URL,ItemName,CurPrice) VALUES (%s,%s,%s,%s)"
+	InsterSql="INSERT INTO CURRENT (CURITEMID,URL,ITEMNAME,CURPRICE) VALUES (%s,%s,%s,%s)"
 	cur = conn.cursor() 
 	count=0
 	try:  
@@ -124,11 +124,11 @@ def InitClearZero():
 	print("Update %d records into table"%count)
 	return count
 
-#Cur表更新好之后，下记函数将Cur表中的信息同步到His表中
+#Cur表更新完成之后，下记函数将Cur表中的信息同步到His表中
 def UpdateHis():
 	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
-	Sreachsql="SELECT CurItemId,CurPrice,UpdTimeVersion FROM CURRENT"
-	InsterSql="INSERT INTO HISTORY (HisItemId,HisPrice,GetTimeVersion) VALUES (%s,%s,%s)"
+	Sreachsql="SELECT CURITEMID,CURPRICE,UPDTIMEVERSION FROM CURRENT"
+	InsterSql="INSERT INTO HISTORY (HISITEMID,HISPRICE,GETTIMEVERSION) VALUES (%s,%s,%s)"
 	cur = conn.cursor() 
 	try:  
 		cur.execute(Sreachsql)
@@ -161,11 +161,13 @@ def ClearZeroList(item0list):
 			count=count+1
 			Tempprice=GetMobPrice(Item[0])
 			Item[1]=Tempprice
+	#返回值中，count是0价格的计数，item0list是本次更新0价格之后的ItemList
 	return count,item0list
 
 #移动端网页爬取价格时，仍然有0价格的情况，下记函数在日常更新后对0价格做更新处理
 def ClearZeroPrice(item0list):
 	lists=ClearZeroList(item0list)
+	#反复调用0价格更新处理直至没有0价格
 	while (lists[0] !=0):
 		print("Totle %d records price is zero"%lists[0])
 		lists=ClearZeroList(lists[1])
@@ -174,7 +176,7 @@ def ClearZeroPrice(item0list):
 #日常更新Cur表。仍有null price的问题尚未解决，数据中时间戳属性需要改为非自动更新
 def UpdateCur():
 	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
-	Sreachsql="SELECT CurItemId FROM CURRENT"
+	Sreachsql="SELECT CURITEMID FROM CURRENT"
 	cur = conn.cursor()
 	Item0List=[]
 	count=0
@@ -191,11 +193,13 @@ def UpdateCur():
 		Item0List.append([ItemID[0],price])
 	Item0List=ClearZeroPrice(Item0List)
 	cur = conn.cursor()
+	print(Item0List)
 	try:
 		for Item in Item0List:
 			price=GetMobPrice(Item[0])
-			if(price!=""):
-				cur.execute("UPDATE CURRENT SET CURPRICE="+str(Item[1])+" WHERE CURITEMID="+str(Item[0]))
+			if(price!="") or (price!="暂无报价") :
+				updatetime=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+				cur.execute("UPDATE CURRENT SET CURPRICE="+str(Item[1])+", UPDTIMEVERSION='"+str(updatetime)+"' WHERE CURITEMID="+str(Item[0]))
 				count=count+1
 		conn.commit()
 	except Exception as e:  
@@ -206,14 +210,16 @@ def UpdateCur():
 		conn.close()
 	return count
 
-ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=4")
-ItemList=[]
-for ItemID in ItemUrl:
-	time.sleep(0.15)
-	ItemName=(GetName(ItemUrl[ItemID]))
-	ItemPrice=(GetMobPrice(ItemID))
-	ItemList.append([ItemID,ItemUrl[ItemID],ItemName,ItemPrice])
-print(ItemList)
+curupdate=UpdateCur()
+print("Totle %d records updated in current"%curupdate)
 
+#ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=4")
+#ItemList=[]
+#for ItemID in ItemUrl:
+#	time.sleep(0.15)
+#	ItemName=(GetName(ItemUrl[ItemID]))
+#	ItemPrice=(GetMobPrice(ItemID))
+#	ItemList.append([ItemID,ItemUrl[ItemID],ItemName,ItemPrice])
+#print(ItemList)
 
 #InsertDB(ItemList)

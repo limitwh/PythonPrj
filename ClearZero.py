@@ -11,7 +11,7 @@ def GetMobPrice(itemid):
 	htmlstr=requests.get(MobPriceUrl).text
 	soup = BeautifulSoup(htmlstr,"lxml")
 	price=0
-	time.sleep(0.45)
+	time.sleep(0.15)
 	try:
 		pricetag = soup.find_all(name='input',attrs={"name":"jdPrice"})[0].attrs
 		price=pricetag['value']
@@ -50,3 +50,4 @@ else:
 		cur.close()
 		conn.close()
 	print("Update %d records into table"%count)
+

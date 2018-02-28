@@ -12,7 +12,7 @@ CurItemId varchar(20) NOT NULL UNIQUE,
 ItemName varchar(120) NOT NULL,
 URL varchar(128) NOT NULL UNIQUE,
 CurPrice double(10,2) NOT NULL,
-UpdTimeVersion timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+UpdTimeVersion timestamp DEFAULT CURRENT_TIMESTAMP,
 PRIMARY KEY  (CurrentId)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
