@@ -175,6 +175,8 @@ def ClearZeroPrice(item0list):
 
 #日常更新Cur表。仍有null price的问题尚未解决，数据中时间戳属性需要改为非自动更新
 def UpdateCur():
+	#正则表达式：从str中将float筛选出来
+	ClearPrice=re.compile(r"^\d+?\.\d+?$")
 	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
 	Sreachsql="SELECT CURITEMID FROM CURRENT"
 	cur = conn.cursor()
@@ -192,15 +194,17 @@ def UpdateCur():
 		price=GetMobPrice(ItemID[0])
 		Item0List.append([ItemID[0],price])
 	Item0List=ClearZeroPrice(Item0List)
+	for Price in Item0List:
+		if (len(ClearPrice.findall(Price[1])) == 0):
+			Price[1]='-1'
 	cur = conn.cursor()
 	print(Item0List)
 	try:
 		for Item in Item0List:
 			price=GetMobPrice(Item[0])
-			if(price!="") or (price!="暂无报价") :
-				updatetime=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-				cur.execute("UPDATE CURRENT SET CURPRICE="+str(Item[1])+", UPDTIMEVERSION='"+str(updatetime)+"' WHERE CURITEMID="+str(Item[0]))
-				count=count+1
+			updatetime=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+			cur.execute("UPDATE CURRENT SET CURPRICE="+str(Item[1])+", UPDTIMEVERSION='"+str(updatetime)+"' WHERE CURITEMID="+str(Item[0]))
+			count=count+1
 		conn.commit()
 	except Exception as e:  
 		conn.rollback()
@@ -208,10 +212,11 @@ def UpdateCur():
 	finally:  
 		cur.close()
 		conn.close()
+	print("Totle %d records updated in current"%count)
 	return count
 
-curupdate=UpdateCur()
-print("Totle %d records updated in current"%curupdate)
+#UpdateCur()
+UpdateHis()
 
 #ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=4")
 #ItemList=[]
