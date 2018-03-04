@@ -214,17 +214,3 @@ def UpdateCur():
 		conn.close()
 	print("Totle %d records updated in current"%count)
 	return count
-
-#UpdateCur()
-UpdateHis()
-
-#ItemUrl=GetItemFromUrl("https://list.jd.com/list.html?cat=9987,653,655&page=4")
-#ItemList=[]
-#for ItemID in ItemUrl:
-#	time.sleep(0.15)
-#	ItemName=(GetName(ItemUrl[ItemID]))
-#	ItemPrice=(GetMobPrice(ItemID))
-#	ItemList.append([ItemID,ItemUrl[ItemID],ItemName,ItemPrice])
-#print(ItemList)
-
-#InsertDB(ItemList)
