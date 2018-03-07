@@ -1,5 +1,7 @@
 __author__ = 'limitwh'
 #coding=utf-8
+import xml.etree.ElementTree as ET
+from DBUtils.PooledDB import PooledDB
 from bs4 import BeautifulSoup
 import requests
 import pymysql
@@ -61,48 +63,45 @@ def GetName(url):
 	return divtitle[0].text
 
 #初始化插入Item到Mysql表中
-def InitInsertDB(ItemList):
-	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
+def InitInsertDB(ItemList,connection):
 	InsterSql="INSERT INTO CURRENT (CURITEMID,URL,ITEMNAME,CURPRICE) VALUES (%s,%s,%s,%s)"
-	cur = conn.cursor() 
+	cur = connection.cursor() 
 	count=0
 	try:  
 		for Item in ItemList:
 			cur.execute(InsterSql,(Item))
 			count=count+1
-		conn.commit()
+		connection.commit()
 	except Exception as e:  
-		conn.rollback()
+		connection.rollback()
 		raise e     
 	finally:  
 		cur.close()
-		conn.close()
+		connection.close()
 	print("Inster %d records into table"%count)
 
 #取得代理IP，未使用
-def GetIPoor():
-	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
+def GetIPoor(connection):
 	GetIP="SELECT HTTP,IPURL FROM IPOOR"
-	cur = conn.cursor() 
+	cur = connection.cursor() 
 	try:  
 		cur.execute(GetIP)
 		results = cur.fetchall()
 	except Exception as e:  
-		conn.rollback()
+		connection.rollback()
 		raise e     
 	finally:  
 		cur.close()
-		conn.close()
+		connection.close()
 	return results
 
 #移动端网页爬取价格时，仍然有0价格的情况，下记函数在初始化插入后对0价格做更新处理
-def InitClearZero():
-	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
+def InitClearZero(connection):
 	price=0
 	itemid=0
 	count=0
 	Sreachsql="SELECT CURITEMID FROM CURRENT WHERE CURPRICE=0"
-	cur = conn.cursor()
+	cur = connection.cursor()
 	cur.execute(Sreachsql)
 	results = cur.fetchall()
 	if len(results) == 0:
@@ -114,22 +113,21 @@ def InitClearZero():
 				price=GetMobPrice(itemid[0])
 				cur.execute("UPDATE CURRENT SET CURPRICE="+str(price)+" WHERE CURITEMID="+itemid[0])
 				count=count+1
-			conn.commit()
+			connection.commit()
 		except Exception as e:  
-			conn.rollback()
+			connection.rollback()
 			raise e     
 		finally:  
 			cur.close()
-			conn.close()
+			connection.close()
 	print("Update %d records into table"%count)
 	return count
 
 #Cur表更新完成之后，下记函数将Cur表中的信息同步到His表中
-def UpdateHis():
-	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
+def UpdateHis(connection):
 	Sreachsql="SELECT CURITEMID,CURPRICE,UPDTIMEVERSION FROM CURRENT"
 	InsterSql="INSERT INTO HISTORY (HISITEMID,HISPRICE,GETTIMEVERSION) VALUES (%s,%s,%s)"
-	cur = conn.cursor() 
+	cur = connection.cursor() 
 	try:  
 		cur.execute(Sreachsql)
 		results = cur.fetchall()
@@ -150,7 +148,7 @@ def UpdateHis():
 		raise e     
 	finally:  
 		cur.close()
-		conn.close()
+		connection.close()
 	print("Inster %d records into History table"%count)
 
 #移动端网页爬取价格时，仍然有0价格的情况，下记函数在日常更新后对0价格做更新处理
@@ -174,19 +172,18 @@ def ClearZeroPrice(item0list):
 	return lists[1]
 
 #日常更新Cur表。仍有null price的问题尚未解决，数据中时间戳属性需要改为非自动更新
-def UpdateCur():
+def UpdateCur(connection):
 	#正则表达式：从str中将float筛选出来
 	ClearPrice=re.compile(r"^\d+?\.\d+?$")
-	conn=pymysql.connect(host="localhost",user="pytest",password="password",db="JDdb",port=3306,charset='utf8')
 	Sreachsql="SELECT CURITEMID FROM CURRENT"
-	cur = conn.cursor()
+	cur = connection.cursor()
 	Item0List=[]
 	count=0
 	try:  
 		cur.execute(Sreachsql)
 		results = cur.fetchall()
 	except Exception as e:  
-		conn.rollback()
+		connection.rollback()
 		raise e     
 	finally:  
 		cur.close()
@@ -197,7 +194,7 @@ def UpdateCur():
 	for Price in Item0List:
 		if (len(ClearPrice.findall(Price[1])) == 0):
 			Price[1]='-1'
-	cur = conn.cursor()
+	cur = connection.cursor()
 	print(Item0List)
 	try:
 		for Item in Item0List:
@@ -205,12 +202,22 @@ def UpdateCur():
 			updatetime=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
 			cur.execute("UPDATE CURRENT SET CURPRICE="+str(Item[1])+", UPDTIMEVERSION='"+str(updatetime)+"' WHERE CURITEMID="+str(Item[0]))
 			count=count+1
-		conn.commit()
+		connection.commit()
 	except Exception as e:  
-		conn.rollback()
+		connection.rollback()
 		raise e     
 	finally:  
 		cur.close()
-		conn.close()
+		connection.close()
 	print("Totle %d records updated in current"%count)
 	return count
+
+def DBConnPool(xml)
+	tree = ET.parse(xml)
+	root = tree.getroot()
+	for child in root:
+		print(child.tag,child.attrib)
+		for x in child:
+			print(x.tag,x.text)
+	pool = PooledDB(pymysql,5,host='localhost',user='pytest',passwd='password',db='JDdb',port=3306,charset="utf8")
+	return pool.connection

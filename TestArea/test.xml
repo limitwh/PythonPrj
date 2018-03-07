@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<Mysql>
+    <database name="JDdb">
+        <poolmin>5</poolmin>
+        <username>pytest</username>
+        <password>password</password>
+        <host>localhost</host>
+		<port>3306</port>
+		<charset>utf8</charset>
+    </database>
+</Mysql>
