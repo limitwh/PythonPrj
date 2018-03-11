@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Mysql>
-    <database name="JDdb">
+    <database name="shopdb">
         <poolmin>5</poolmin>
         <username>pytest</username>
         <password>password</password>

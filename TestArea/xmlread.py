@@ -3,7 +3,11 @@ __author__ = 'limitwh'
 import xml.etree.ElementTree as ET
 tree = ET.parse('test.xml')
 root = tree.getroot()
+XML={}
+#print(database.attrib['name'])
+#print(password)
 for child in root:
-	print(child.tag,child.attrib)
+	XML['dbname']=child.attrib['name']
 	for x in child:
-		print(x.tag,x.text)
+		XML[x.tag]=x.text
+print(XML)
