@@ -44,5 +44,3 @@ except Exception as e:
 finally: #关闭连接
 	#cur.close() 
     conn.close()
-
-

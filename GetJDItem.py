@@ -211,13 +211,22 @@ def UpdateCur(connection):
 		connection.close()
 	print("Totle %d records updated in current"%count)
 	return count
-
-def DBConnPool(xml)
-	tree = ET.parse(xml)
-	root = tree.getroot()
-	for child in root:
-		print(child.tag,child.attrib)
-		for x in child:
-			print(x.tag,x.text)
-	pool = PooledDB(pymysql,5,host='localhost',user='pytest',passwd='password',db='JDdb',port=3306,charset="utf8")
-	return pool.connection
+#从XLM文件中取得数据库连接信息，并返回数据库连接池
+def GetDB(xml)
+    tree = ET.parse(XMLfile)
+    root = tree.getroot()
+    DBconfig={}
+    for child in root:
+        DBconfig['dbname']=child.attrib['name']
+        for x in child:
+            DBconfig[x.tag]=x.text
+    DBconfig=GetDB('test.xml')
+	pool = PooledDB(pymysql,
+                int(DBconfig['poolmin']),
+                host=DBconfig['host'],
+                user=DBconfig['username'],
+                password=DBconfig['password'],
+                db=DBconfig['dbname'],
+                port=int(DBconfig['port']),
+                charset=DBconfig['charset'])
+	return pool
